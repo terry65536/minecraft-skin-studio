@@ -24,7 +24,7 @@ Draw the skin on a 64 × 64 atlas, watch it in the live 3D preview, and export a
 1. Download `skin-studio.html`.
 2. Open it in a desktop browser (double-click is enough — no local server required).
 3. Paint, then press **Export PNG**.
-4. In Minecraft, put the file into `.minecraft/skins/`, or upload it at [minecraft.net](https://www.minecraft.net/en-us/profile/skin) / your launcher's skin page.
+4. Upload the PNG on [minecraft.net](https://www.minecraft.net/en-us/profile/skin) or through your launcher's skin settings. Third-party launchers such as HMCL and PCL2 also accept a local skin file.
 
 A procedurally generated default skin is loaded on first run, so the canvas is never empty.
 
@@ -83,7 +83,7 @@ Both layers are editable: the **base** layer is the skin itself, the **overlay**
 
 ## Browser support
 
-Tested in current Chrome, Edge and Firefox. Requires Canvas 2D and, for the 3D preview, WebGL. If WebGL is unavailable the pixel editor still works; the preview panel shows a notice instead.
+Works in current versions of Chrome and Edge (Chromium). The editor needs Canvas 2D; the 3D preview also needs WebGL. If WebGL is unavailable the pixel editor still works — the preview panel shows a notice instead.
 
 `file://` works, so the file can be used offline or from a USB stick. Nothing is uploaded anywhere — everything stays in your browser.
 
