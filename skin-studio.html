@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Skin Studio · Java 版皮肤编辑器</title>
+<style>
+  :root{
+    --bg:#0b0e12; --panel:#11161c; --panel2:#151b22; --line:#1f2832;
+    --txt:#c9d4e0; --dim:#77828f; --dim2:#4d5865;
+    --accent:#6fd08c; --accent-dk:#22503a; --warm:#e0a45c; --warm-dk:#5a4126;
+    --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--txt);overflow:hidden;user-select:none;
+    font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  #app{height:100%;display:flex;flex-direction:column;min-height:0}
+
+  /* ---------- top bar ---------- */
+  #topbar{
+    height:54px;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:0 16px;
+    border-bottom:1px solid var(--line);background:linear-gradient(#131920,#0f141a);
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .logo{
+    width:20px;height:20px;flex:0 0 auto;align-self:center;border-radius:4px;
+    background:conic-gradient(from 210deg,#6fd08c,#4a9e6b,#2b6a4b,#6fd08c);
+    box-shadow:0 0 0 1px rgba(111,208,140,.35),0 0 18px rgba(111,208,140,.25);
+  }
+  .ttl{font:600 13px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:#e8eef5}
+  .sub{font-size:11.5px;color:var(--dim);letter-spacing:.04em;white-space:nowrap}
+  .spacer{flex:1 1 auto}
+  .btn{
+    height:30px;padding:0 13px;border-radius:7px;border:1px solid var(--line);
+    background:#19212a;color:var(--txt);font-size:12px;font-weight:500;white-space:nowrap;
+    transition:background .14s,border-color .14s,color .14s;
+  }
+  .btn:hover{background:#212b36;border-color:#2d3a49}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--dim)}
+  .btn.ghost:hover{color:var(--txt);background:#19212a}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#08180e;font-weight:700}
+  .btn.primary:hover{background:#82dda0;border-color:#82dda0}
+  .btn.small{height:26px;padding:0 10px;font-size:11.5px;border-radius:6px}
+  #btnReset{min-width:78px}
+  .seg{display:flex;padding:2px;gap:2px;border:1px solid var(--line);border-radius:8px;background:#0e1319}
+  .seg button{
+    height:26px;padding:0 12px;border-radius:6px;font-size:11.5px;color:var(--dim);
+    transition:background .14s,color .14s;
+  }
+  .seg button:hover{color:var(--txt)}
+  .seg button.on{background:#26313d;color:#eaf2fa;box-shadow:inset 0 0 0 1px #33414f}
+
+  /* ---------- layout ---------- */
+  main{flex:1 1 auto;display:grid;grid-template-columns:200px minmax(0,1fr) 372px;min-height:0}
+
+  /* ---------- left panel ---------- */
+  #left{
+    display:flex;flex-direction:column;gap:2px;padding:14px 12px;overflow-y:auto;
+    border-right:1px solid var(--line);background:var(--panel);
+  }
+  #left::-webkit-scrollbar{width:8px}
+  #left::-webkit-scrollbar-thumb{background:#232d38;border-radius:4px}
+  .group{padding:10px 0 12px;border-bottom:1px solid rgba(255,255,255,.045)}
+  .group:first-child{padding-top:0}
+  .group:last-child{border-bottom:none;padding-bottom:0}
+  h4{
+    font-size:10.5px;font-weight:600;letter-spacing:.16em;color:var(--dim2);
+    text-transform:uppercase;margin-bottom:9px;
+  }
+  .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+  .tool{
+    height:44px;display:grid;place-items:center;border-radius:8px;
+    border:1px solid var(--line);background:#151c24;color:var(--dim);
+    transition:background .14s,color .14s,border-color .14s;
+  }
+  .tool:hover{color:var(--txt);border-color:#2c3846;background:#1a232c}
+  .tool.on{background:rgba(111,208,140,.11);border-color:rgba(111,208,140,.5);color:var(--accent)}
+  .tool svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+  .brushes{display:flex;gap:5px}
+  .brushBtn{
+    flex:1;height:28px;border-radius:6px;border:1px solid var(--line);background:#151c24;
+    color:var(--dim);font:11.5px var(--mono);transition:.14s;display:grid;place-items:center;
+  }
+  .brushBtn:hover{color:var(--txt);border-color:#2c3846}
+  .brushBtn.on{background:rgba(111,208,140,.11);border-color:rgba(111,208,140,.5);color:var(--accent)}
+  .brushBtn i{display:block;background:currentColor;border-radius:1px}
+
+  .colorRow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .swatchBig{
+    position:relative;width:46px;height:46px;flex:0 0 auto;border-radius:8px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.14);cursor:pointer;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),0 2px 10px rgba(0,0,0,.35);
+    background-image:linear-gradient(45deg,#2a323c 25%,transparent 25%,transparent 75%,#2a323c 75%),
+                     linear-gradient(45deg,#2a323c 25%,transparent 25%,transparent 75%,#2a323c 75%);
+    background-size:10px 10px;background-position:0 0,5px 5px;
+  }
+  .swatchBig .fill{position:absolute;inset:0}
+  .swatchBig input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
+  .hexWrap{display:flex;flex-direction:column;gap:2px;min-width:0}
+  #hexLabel{font:12.5px var(--mono);letter-spacing:.06em;color:#e4ecf4;text-transform:uppercase}
+  .muted{font-size:10.5px;color:var(--dim2);letter-spacing:.08em}
+  .palette{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+  .sw{
+    aspect-ratio:1;border-radius:3px;cursor:pointer;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);
+  }
+  .sw:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+  .sw.on{box-shadow:0 0 0 1px var(--bg),0 0 0 2.5px var(--accent)}
+  .recent{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:9px;min-height:16px}
+  .recent .sw{height:16px;aspect-ratio:auto}
+
+  .tog{display:flex;align-items:center;gap:8px;font-size:12px;color:#a9b5c1;padding:5px 0;cursor:pointer}
+  .tog input{
+    appearance:none;width:32px;height:18px;border-radius:9px;background:#202933;
+    border:1px solid #2b3644;position:relative;transition:.16s;cursor:pointer;flex:0 0 auto;
+  }
+  .tog input:checked{background:rgba(111,208,140,.28);border-color:rgba(111,208,140,.55)}
+  .tog input::after{
+    content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+    background:#7d8b99;transition:.16s;
+  }
+  .tog input:checked::after{left:16px;background:var(--accent)}
+  .tog:hover span{color:var(--txt)}
+  .hist{display:flex;gap:5px}
+  .hist .btn{flex:1}
+
+  /* ---------- stage ---------- */
+  #stage{
+    position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;
+    background:radial-gradient(ellipse 90% 70% at 50% 38%,#141a22 0%,#0c1015 62%,#090c10 100%);
+  }
+  .stageBar{
+    height:40px;flex:0 0 auto;display:flex;align-items:center;gap:10px;
+    padding:0 14px;border-bottom:1px solid rgba(255,255,255,.045);
+  }
+  .chips{display:flex;gap:4px}
+  .chip{
+    height:24px;padding:0 10px;border-radius:5px;font-size:11.5px;color:var(--dim);
+    border:1px solid transparent;transition:.14s;
+  }
+  .chip:hover{color:var(--txt);background:#18212a}
+  .chip.on{color:#dff5e6;background:rgba(111,208,140,.12);border-color:rgba(111,208,140,.3)}
+  #zoomLabel{margin-left:auto;font:11px var(--mono);color:var(--dim2);letter-spacing:.08em}
+  #canvasWrap{flex:1 1 auto;position:relative;min-height:0;overflow:hidden;touch-action:none;cursor:crosshair}
+  .layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #tip{
+    position:absolute;pointer-events:none;z-index:5;padding:3px 7px;border-radius:5px;
+    background:rgba(11,15,19,.92);border:1px solid #2b3644;color:#d5e0ea;
+    font:11px var(--mono);letter-spacing:.02em;white-space:nowrap;
+    opacity:0;transform:translateY(-2px);transition:opacity .1s;box-shadow:0 4px 16px rgba(0,0,0,.45)
+  }
+  #tip.on{opacity:1}
+
+  /* ---------- right panel ---------- */
+  #right{
+    display:flex;flex-direction:column;min-width:0;min-height:0;
+    border-left:1px solid var(--line);background:var(--panel);
+  }
+  .panelHead{
+    height:40px;flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 14px;
+    border-bottom:1px solid rgba(255,255,255,.045);
+  }
+  .panelHead h4{margin:0}
+  .panelHead .hint{margin-left:auto;font-size:10.5px;color:var(--dim2);letter-spacing:.03em}
+  #viewWrap{
+    position:relative;flex:1 1 auto;min-height:0;
+    background:radial-gradient(ellipse 72% 56% at 50% 44%,#202b37 0%,#131920 56%,#0c1015 100%);
+  }
+  #view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  #view:active{cursor:grabbing}
+  #viewBadge{
+    position:absolute;left:12px;top:10px;padding:3px 8px;border-radius:5px;
+    font:10.5px var(--mono);letter-spacing:.06em;
+    color:#94a3b1;background:rgba(9,12,16,.6);border:1px solid rgba(255,255,255,.07);
+    pointer-events:none;
+  }
+  #glFail{
+    position:absolute;inset:0;display:none;place-items:center;text-align:center;
+    padding:24px;color:var(--dim);font-size:12px;line-height:1.7;
+  }
+  .viewCtl{
+    flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;
+    border-top:1px solid rgba(255,255,255,.045);
+  }
+  .viewCtl .tog{padding:0}
+  .viewCtl .btn{margin-left:auto}
+  .viewCtl .tog input{width:28px;height:16px}
+  .viewCtl .tog input::after{width:10px;height:10px}
+  .viewCtl .tog input:checked::after{left:14px}
+
+  /* ---------- status ---------- */
+  #statusbar{
+    flex:0 0 auto;height:26px;display:flex;align-items:center;gap:18px;padding:0 14px;
+    border-top:1px solid var(--line);background:#0d1217;
+    font:11px var(--mono);color:var(--dim2);letter-spacing:.05em;
+  }
+  #statusbar b{color:#93a2b1;font-weight:500}
+  #statusbar .right{margin-left:auto}
+  #statusbar .gh{
+    display:flex;align-items:center;gap:6px;margin-left:18px;padding:0 8px;height:19px;
+    border-radius:5px;border:1px solid transparent;color:var(--dim);text-decoration:none;
+    font:11px var(--mono);letter-spacing:.04em;transition:.14s;
+  }
+  #statusbar .gh:hover{color:#e9f1f8;background:#19222c;border-color:#2b3644}
+  #statusbar .gh svg{width:12px;height:12px;fill:currentColor;flex:0 0 auto}
+  #statusbar .gh .arrow{font-size:10px;opacity:.65}
+  #toast{
+    position:fixed;left:50%;bottom:44px;transform:translate(-50%,8px);z-index:50;
+    padding:9px 16px;border-radius:8px;background:#1b242e;border:1px solid #33404f;
+    color:#dce6f0;font-size:12px;opacity:0;pointer-events:none;transition:.2s;
+    box-shadow:0 10px 34px rgba(0,0,0,.5);
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:1060px){
+    main{grid-template-columns:176px minmax(0,1fr) 300px}
+  }
+  @media (max-width:860px){
+    main{grid-template-columns:152px minmax(0,1fr);grid-template-rows:minmax(0,1fr) 236px}
+    #left{grid-column:1;grid-row:1;padding:10px 9px}
+    #stage{grid-column:2;grid-row:1}
+    #right{grid-column:1/-1;grid-row:2;border-left:none;border-top:1px solid var(--line)}
+    .tools{grid-template-columns:repeat(2,1fr)}
+    .palette{grid-template-columns:repeat(6,1fr)}
+    .sub{display:none}
+    .viewCtl{gap:10px;padding:6px 12px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo"></span>
+      <span class="ttl">Skin Studio</span>
+      <span class="sub">Java 版皮肤编辑器</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg" id="modelSeg">
+      <button data-model="classic" class="on">经典 4px</button>
+      <button data-model="slim">纤细 3px</button>
+    </div>
+    <button class="btn" id="btnImport">导入 PNG</button>
+    <button class="btn primary" id="btnExport">导出 PNG</button>
+    <button class="btn ghost" id="btnReset">重置</button>
+    <input type="file" id="fileInput" accept="image/png,image/*" hidden>
+  </header>
+
+  <main>
+    <aside id="left">
+      <div class="group">
+        <h4>工具</h4>
+        <div class="tools" id="tools">
+          <button class="tool on" data-tool="pencil" title="画笔 (P)">
+            <svg viewBox="0 0 24 24"><path d="M4 20l1-4.2L15.6 5.2a1.7 1.7 0 0 1 2.4 0l1.8 1.8a1.7 1.7 0 0 1 0 2.4L9.2 19 5 20z"/><path d="M14.5 6.3l3.2 3.2"/></svg>
+          </button>
+          <button class="tool" data-tool="eraser" title="橡皮 (E)">
+            <svg viewBox="0 0 24 24"><path d="M4 20h8"/><path d="M6.6 16.6l7.8-7.8a1.8 1.8 0 0 1 2.6 0l1.2 1.2a1.8 1.8 0 0 1 0 2.6L12.8 19H8.4z"/></svg>
+          </button>
+          <button class="tool" data-tool="bucket" title="油漆桶 (G)">
+            <svg viewBox="0 0 24 24"><path d="M6.2 9.4h11.6l-1.5 8.9a2 2 0 0 1-2 1.7H9.7a2 2 0 0 1-2-1.7z"/><path d="M9.2 9.4V7.2a2.8 2.8 0 0 1 5.6 0v2.2"/><path d="M13 3.9l4.4 2.4"/></svg>
+          </button>
+          <button class="tool" data-tool="picker" title="吸管 (I)">
+            <svg viewBox="0 0 24 24"><path d="M15.6 3.6a2.1 2.1 0 0 1 3 3l-2.1 2.1-3-3z"/><path d="M13.4 6.6l-8.6 8.6L3.6 20.4l5.2-1.2 8.6-8.6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h4>笔刷</h4>
+        <div class="brushes" id="brushes">
+          <button class="brushBtn on" data-brush="1"><i style="width:3px;height:3px"></i></button>
+          <button class="brushBtn" data-brush="2"><i style="width:6px;height:6px"></i></button>
+          <button class="brushBtn" data-brush="3"><i style="width:9px;height:9px"></i></button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h4>颜色</h4>
+        <div class="colorRow">
+          <label class="swatchBig" id="swatchBig">
+            <span class="fill" id="swatchFill"></span>
+            <input type="color" id="colorInput" value="#c99a76">
+          </label>
+          <div class="hexWrap">
+            <span id="hexLabel">#C99A76</span>
+            <span class="muted">当前颜色</span>
+          </div>
+        </div>
+        <div class="palette" id="palette"></div>
+        <div class="recent" id="recent"></div>
+      </div>
+
+      <div class="group">
+        <h4>选项</h4>
+        <label class="tog"><input type="checkbox" id="cbSym"><span>左右对称</span></label>
+        <label class="tog"><input type="checkbox" id="cbGrid" checked><span>像素网格</span></label>
+      </div>
+
+      <div class="group">
+        <div class="hist">
+          <button class="btn small" id="btnUndo">撤销</button>
+          <button class="btn small" id="btnRedo">重做</button>
+        </div>
+      </div>
+    </aside>
+
+    <section id="stage">
+      <div class="stageBar">
+        <div class="chips" id="focusChips"></div>
+        <div id="zoomLabel">—</div>
+      </div>
+      <div id="canvasWrap">
+        <canvas class="layer" id="editorBase"></canvas>
+        <canvas class="layer" id="editorOverlay"></canvas>
+        <div id="tip"></div>
+      </div>
+    </section>
+
+    <aside id="right">
+      <div class="panelHead">
+        <h4>3D 预览</h4>
+        <span class="hint">拖动旋转 · 滚轮缩放</span>
+      </div>
+      <div id="viewWrap">
+        <canvas id="view"></canvas>
+        <div id="viewBadge">经典</div>
+        <div id="glFail">当前浏览器无法创建 WebGL 上下文<br>3D 预览不可用，像素编辑不受影响</div>
+      </div>
+      <div class="viewCtl">
+        <label class="tog"><input type="checkbox" id="cbAuto"><span>自动旋转</span></label>
+        <label class="tog"><input type="checkbox" id="cbOverlay" checked><span>外层</span></label>
+        <button class="btn small ghost" id="btnResetView">重置视角</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="statusbar">
+    <span>坐标 <b id="stCoord">—</b></span>
+    <span>部位 <b id="stPart">—</b></span>
+    <span class="right">64 × 64 · <b id="stZoom">—</b></span>
+    <a class="gh" href="https://github.com/terry65536/minecraft-skin-studio" target="_blank" rel="noopener noreferrer" title="View source on GitHub">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.33.96.1-.74.4-1.25.72-1.54-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.26 5.69.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>
+      <span>GitHub</span><span class="arrow">↗</span>
+    </a>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script>
+(function () {
+'use strict';
+
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+/* ============================================================
+   皮肤画布
+   ============================================================ */
+const TEX = 64;
+const skinCv = document.createElement('canvas');
+skinCv.width = TEX; skinCv.height = TEX;
+const sctx = skinCv.getContext('2d', { willReadFrequently: true });
+sctx.imageSmoothingEnabled = false;
+
+const state = {
+  tool: 'pencil',
+  color: '#c99a76',
+  brush: 1,
+  sym: false,
+  grid: true,
+  zoom: 8,
+  ox: 0, oy: 0,
+  model: 'classic',
+  overlay: true,
+  auto: false,
+  focused: 'all'
+};
+
+/* ============================================================
+   UV 布局：Minecraft 1.8+ 64×64 皮肤
+   ============================================================ */
+const FACE_DEFS = [
+  { k: 'top',    n: '顶部', rect: (u, v, w, h, d) => [u + d, v, w, d] },
+  { k: 'bottom', n: '底部', rect: (u, v, w, h, d) => [u + d + w, v, w, d] },
+  { k: 'right',  n: '右侧', rect: (u, v, w, h, d) => [u, v + d, d, h] },
+  { k: 'front',  n: '正面', rect: (u, v, w, h, d) => [u + d, v + d, w, h] },
+  { k: 'left',   n: '左侧', rect: (u, v, w, h, d) => [u + d + w, v + d, d, h] },
+  { k: 'back',   n: '背面', rect: (u, v, w, h, d) => [u + 2 * d + w, v + d, w, h] }
+];
+const FACE_BY_KEY = {};
+FACE_DEFS.forEach(f => { FACE_BY_KEY[f.k] = f; });
+
+function partTable(aw) {
+  const armX = 4 + aw / 2;
+  return [
+    { id: 'head', name: '头部', u: 0,  v: 0,  w: 8, h: 8,  d: 8, ov: [32, 0],  mirror: 'head',
+      c: [0, 28, 0], infl: 0.5, pivot: [0, 24, 0], rot: 0 },
+    { id: 'body', name: '身体', u: 16, v: 16, w: 8, h: 12, d: 4, ov: [16, 32], mirror: 'body',
+      c: [0, 18, 0], infl: 0.25, pivot: [0, 24, 0], rot: 0 },
+    { id: 'rarm', name: '右臂', u: 40, v: 16, w: aw, h: 12, d: 4, ov: [40, 32], mirror: 'larm',
+      c: [-armX, 18, 0], infl: 0.25, pivot: [-armX, 24, 0], rot: -0.085 },
+    { id: 'larm', name: '左臂', u: 32, v: 48, w: aw, h: 12, d: 4, ov: [48, 48], mirror: 'rarm',
+      c: [armX, 18, 0], infl: 0.25, pivot: [armX, 24, 0], rot: 0.085 },
+    { id: 'rleg', name: '右腿', u: 0,  v: 16, w: 4, h: 12, d: 4, ov: [0, 32],  mirror: 'lleg',
+      c: [-2, 6, 0], infl: 0.25, pivot: [-2, 12, 0], rot: 0 },
+    { id: 'lleg', name: '左腿', u: 16, v: 48, w: 4, h: 12, d: 4, ov: [0, 48],  mirror: 'rleg',
+      c: [2, 6, 0], infl: 0.25, pivot: [2, 12, 0], rot: 0 }
+  ];
+}
+
+let PARTS = partTable(4);
+let REGIONS = [];
+let unusedMask = null;
+const PART_BY_ID = {};
+
+const FLIP_FACE = { front: 'front', back: 'back', top: 'top', bottom: 'bottom', left: 'right', right: 'left' };
+
+function buildRegions() {
+  PARTS = partTable(state.model === 'slim' ? 3 : 4);
+  REGIONS = [];
+  PARTS.forEach(p => { PART_BY_ID[p.id] = p; });
+
+  PARTS.forEach(p => {
+    [['base', p.u, p.v], ['ov', p.ov[0], p.ov[1]]].forEach(function (layer) {
+      FACE_DEFS.forEach(f => {
+        REGIONS.push({
+          part: p, layer: layer[0], face: f.k, faceName: f.n,
+          rect: f.rect(layer[1], layer[2], p.w, p.h, p.d), mirror: null
+        });
+      });
+    });
+  });
+
+  const map = {};
+  REGIONS.forEach(r => { map[r.part.id + '|' + r.layer + '|' + r.face] = r; });
+  REGIONS.forEach(r => {
+    r.mirror = map[r.part.mirror + '|' + r.layer + '|' + FLIP_FACE[r.face]] || r;
+  });
+  sctx.imageSmoothingEnabled = false;
+  buildUnusedMask();
+}
+
+function buildUnusedMask() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(6,9,12,.66)';
+  g.fillRect(0, 0, 64, 64);
+  g.globalCompositeOperation = 'destination-out';
+  g.fillStyle = '#000';
+  REGIONS.forEach(r => g.fillRect(r.rect[0], r.rect[1], r.rect[2], r.rect[3]));
+  unusedMask = c;
+}
+
+function regionAt(x, y) {
+  for (let i = 0; i < REGIONS.length; i++) {
+    const r = REGIONS[i].rect;
+    if (x >= r[0] && x < r[0] + r[2] && y >= r[1] && y < r[1] + r[3]) return REGIONS[i];
+  }
+  return null;
+}
+
+function regionsOfPart(id) {
+  return REGIONS.filter(r => r.part.id === id);
+}
+
+function unionRect(list) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  list.forEach(r => {
+    const a = r.rect || r;
+    x0 = Math.min(x0, a[0]); y0 = Math.min(y0, a[1]);
+    x1 = Math.max(x1, a[0] + a[2]); y1 = Math.max(y1, a[1] + a[3]);
+  });
+  return [x0, y0, x1 - x0, y1 - y0];
+}
+
+/* ============================================================
+   编辑器画布
+   ============================================================ */
+const wrap = $('#canvasWrap');
+const baseCv = $('#editorBase');
+const ovCv = $('#editorOverlay');
+const baseCtx = baseCv.getContext('2d');
+const ovCtx = ovCv.getContext('2d');
+let dpr = 1;
+let hover = null;
+let lastPx = null;
+let painting = false;
+let panning = null;
+let spaceDown = false;
+
+function viewSize() { return { w: wrap.clientWidth, h: wrap.clientHeight }; }
+
+function resizeEditor() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  const s = viewSize();
+  [baseCv, ovCv].forEach(c => {
+    c.width = Math.max(1, Math.round(s.w * dpr));
+    c.height = Math.max(1, Math.round(s.h * dpr));
+  });
+  renderBase();
+  renderOverlay();
+}
+
+let checkerCache = { z: 0, pat: null };
+function checkerPattern(z) {
+  if (checkerCache.z === z && checkerCache.pat) return checkerCache.pat;
+  const c = document.createElement('canvas');
+  c.width = c.height = z * 2;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a2129'; g.fillRect(0, 0, z * 2, z * 2);
+  g.fillStyle = '#222b35'; g.fillRect(0, 0, z, z); g.fillRect(z, z, z, z);
+  checkerCache = { z: z, pat: baseCtx.createPattern(c, 'repeat') };
+  return checkerCache.pat;
+}
+
+function renderBase() {
+  const s = viewSize();
+  const z = state.zoom, x0 = state.ox, y0 = state.oy;
+  const size = 64 * z;
+  baseCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  baseCtx.clearRect(0, 0, s.w, s.h);
+
+  baseCtx.save();
+  baseCtx.shadowColor = 'rgba(0,0,0,.5)';
+  baseCtx.shadowBlur = 28;
+  baseCtx.shadowOffsetY = 10;
+  baseCtx.fillStyle = '#0e1319';
+  baseCtx.fillRect(x0, y0, size, size);
+  baseCtx.restore();
+
+  baseCtx.save();
+  baseCtx.translate(x0, y0);
+  baseCtx.fillStyle = checkerPattern(clamp(Math.round(z), 2, 16));
+  baseCtx.fillRect(0, 0, size, size);
+  baseCtx.restore();
+
+  baseCtx.imageSmoothingEnabled = false;
+  baseCtx.drawImage(skinCv, 0, 0, 64, 64, x0, y0, size, size);
+
+  // 未使用区域压暗
+  if (unusedMask) {
+    baseCtx.imageSmoothingEnabled = false;
+    baseCtx.drawImage(unusedMask, 0, 0, 64, 64, x0, y0, size, size);
+  }
+}
+
+function strokeRect(ctx, r) {
+  ctx.strokeRect(Math.round(state.ox + r[0] * state.zoom) + 0.5,
+                 Math.round(state.oy + r[1] * state.zoom) + 0.5,
+                 Math.round(r[2] * state.zoom) - 1,
+                 Math.round(r[3] * state.zoom) - 1);
+}
+
+function renderOverlay() {
+  const s = viewSize();
+  const z = state.zoom, x0 = state.ox, y0 = state.oy;
+  const size = 64 * z;
+  ovCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ovCtx.clearRect(0, 0, s.w, s.h);
+
+  if (state.grid && z >= 5) {
+    const minor = new Path2D(), major = new Path2D();
+    for (let i = 0; i <= 64; i++) {
+      const X = Math.round(x0 + i * z) + 0.5;
+      const Y = Math.round(y0 + i * z) + 0.5;
+      const p = i % 8 === 0 ? major : minor;
+      p.moveTo(X, y0); p.lineTo(X, y0 + size);
+      p.moveTo(x0, Y); p.lineTo(x0 + size, Y);
+    }
+    ovCtx.lineWidth = 1;
+    ovCtx.strokeStyle = 'rgba(255,255,255,.055)';
+    ovCtx.stroke(minor);
+    ovCtx.strokeStyle = 'rgba(255,255,255,.14)';
+    ovCtx.stroke(major);
+  }
+
+  if (hover) {
+    const regs = regionsOfPart(hover.region.part.id);
+    ovCtx.save();
+    ovCtx.setLineDash([4, 3]);
+    ovCtx.lineWidth = 1;
+    ovCtx.strokeStyle = 'rgba(224,164,92,.5)';
+    regs.forEach(r => strokeRect(ovCtx, r.rect));
+    ovCtx.restore();
+
+    const r = hover.region.rect;
+    ovCtx.fillStyle = 'rgba(255,255,255,.09)';
+    ovCtx.fillRect(x0 + r[0] * z, y0 + r[1] * z, r[2] * z, r[3] * z);
+    ovCtx.lineWidth = 1.5;
+    ovCtx.strokeStyle = 'rgba(255,255,255,.8)';
+    strokeRect(ovCtx, r);
+
+    // 笔刷预览
+    const b = state.brush;
+    const st = -Math.floor((b - 1) / 2);
+    ovCtx.lineWidth = 1.5;
+    ovCtx.strokeStyle = 'rgba(111,208,140,.95)';
+    ovCtx.strokeRect(x0 + (hover.x + st) * z + 0.5, y0 + (hover.y + st) * z + 0.5,
+                     b * z - 1, b * z - 1);
+  }
+}
+
+function toTexel(ev) {
+  const r = wrap.getBoundingClientRect();
+  const x = Math.floor((ev.clientX - r.left - state.ox) / state.zoom);
+  const y = Math.floor((ev.clientY - r.top - state.oy) / state.zoom);
+  return { x: x, y: y, cx: ev.clientX - r.left, cy: ev.clientY - r.top };
+}
+
+function updateZoomLabel() {
+  const pct = Math.round(state.zoom * 100);
+  $('#zoomLabel').textContent = pct + '%  ·  ' + state.zoom + ' px/texel';
+  $('#stZoom').textContent = pct + '%';
+}
+
+/* ============================================================
+   绘制
+   ============================================================ */
+const history = [];
+const future = [];
+let histLock = false;
+
+function snapshot() {
+  try { return sctx.getImageData(0, 0, 64, 64); } catch (e) { return null; }
+}
+
+function pushHistory() {
+  if (histLock) return;
+  const snap = snapshot();
+  if (!snap) return;
+  history.push(snap);
+  if (history.length > 64) history.shift();
+  future.length = 0;
+}
+
+function restore(imgData) {
+  histLock = true;
+  sctx.putImageData(imgData, 0, 0);
+  histLock = false;
+  renderBase();
+  onSkinChanged();
+}
+
+function undo() {
+  if (!history.length) return;
+  future.push(snapshot());
+  restore(history.pop());
+  updateHistBtns();
+}
+
+function redo() {
+  if (!future.length) return;
+  history.push(snapshot());
+  restore(future.pop());
+  updateHistBtns();
+}
+
+function updateHistBtns() {
+  $('#btnUndo').disabled = history.length === 0;
+  $('#btnRedo').disabled = future.length === 0;
+  $('#btnUndo').style.opacity = history.length ? 1 : .45;
+  $('#btnRedo').style.opacity = future.length ? 1 : .45;
+}
+
+function setPixel(x, y, erase) {
+  if (erase) sctx.clearRect(x, y, 1, 1);
+  else { sctx.fillStyle = state.color; sctx.fillRect(x, y, 1, 1); }
+}
+
+function mirrorXY(reg, x, y) {
+  const m = reg.mirror;
+  if (!m || m === reg) {
+    return [reg.rect[0] + reg.rect[2] - 1 - (x - reg.rect[0]), y];
+  }
+  return [m.rect[0] + m.rect[2] - 1 - (x - reg.rect[0]), m.rect[1] + (y - reg.rect[1])];
+}
+
+function paintAt(x, y, erase) {
+  const reg = regionAt(x, y);
+  if (!reg) return;
+  const b = state.brush;
+  const st = -Math.floor((b - 1) / 2);
+  const r = reg.rect;
+  for (let j = 0; j < b; j++) {
+    for (let i = 0; i < b; i++) {
+      const px = x + st + i, py = y + st + j;
+      if (px < r[0] || px >= r[0] + r[2] || py < r[1] || py >= r[1] + r[3]) continue;
+      setPixel(px, py, erase);
+      if (state.sym) {
+        const m = mirrorXY(reg, px, py);
+        setPixel(m[0], m[1], erase);
+      }
+    }
+  }
+}
+
+function strokeTo(x, y, erase) {
+  if (!lastPx) { paintAt(x, y, erase); lastPx = [x, y]; return; }
+  let x0 = lastPx[0], y0 = lastPx[1];
+  const dx = Math.abs(x - x0), dy = Math.abs(y - y0);
+  const sx = x0 < x ? 1 : -1, sy = y0 < y ? 1 : -1;
+  let err = dx - dy;
+  let guard = 0;
+  while (guard++ < 512) {
+    paintAt(x0, y0, erase);
+    if (x0 === x && y0 === y) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+  }
+  lastPx = [x, y];
+}
+
+function floodFill(x, y) {
+  const reg = regionAt(x, y);
+  if (!reg || state.tool !== 'bucket') return;
+  const r = reg.rect;
+  const img = sctx.getImageData(0, 0, 64, 64);
+  const d = img.data;
+  const idx0 = (y * 64 + x) * 4;
+  const tc = [d[idx0], d[idx0 + 1], d[idx0 + 2], d[idx0 + 3]];
+  const fc = hexToRgb(state.color);
+  if (tc[0] === fc[0] && tc[1] === fc[1] && tc[2] === fc[2] && tc[3] === 255) return;
+
+  const seen = new Uint8Array(64 * 64);
+  const stack = [x, y];
+  while (stack.length) {
+    const py = stack.pop(), px = stack.pop();
+    if (px < r[0] || px >= r[0] + r[2] || py < r[1] || py >= r[1] + r[3]) continue;
+    const k = py * 64 + px;
+    if (seen[k]) continue;
+    seen[k] = 1;
+    const i = k * 4;
+    if (d[i] !== tc[0] || d[i + 1] !== tc[1] || d[i + 2] !== tc[2] || d[i + 3] !== tc[3]) continue;
+    d[i] = fc[0]; d[i + 1] = fc[1]; d[i + 2] = fc[2]; d[i + 3] = 255;
+    stack.push(px - 1, py, px + 1, py, px, py - 1, px, py + 1);
+  }
+  sctx.putImageData(img, 0, 0);
+  if (state.sym) {
+    // 对称填充：镜像整块面
+    const m = reg.mirror;
+    if (m && m !== reg) {
+      const img2 = sctx.getImageData(0, 0, 64, 64);
+      const d2 = img2.data;
+      for (let yy = 0; yy < r[3]; yy++) {
+        for (let xx = 0; xx < r[2]; xx++) {
+          const src = ((r[1] + yy) * 64 + (r[0] + xx)) * 4;
+          const dst = ((m.rect[1] + yy) * 64 + (m.rect[0] + m.rect[2] - 1 - xx)) * 4;
+          d2[dst] = d2[src]; d2[dst + 1] = d2[src + 1];
+          d2[dst + 2] = d2[src + 2]; d2[dst + 3] = d2[src + 3];
+        }
+      }
+      sctx.putImageData(img2, 0, 0);
+    }
+  }
+}
+
+function hexToRgb(h) {
+  const n = parseInt(h.replace('#', ''), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/* ============================================================
+   3D 预览（自带迷你 WebGL 渲染器）
+   ============================================================ */
+const viewCv = $('#view');
+let gl = null, prog = null;
+let attribs = {}, uniforms = {};
+let skinTex = null, shadowTex = null;
+let meshes = { base: null, overlay: null, shadow: null };
+let geoDirty = true, texDirty = true;
+let cam = { yaw: -0.42, pitch: 0.12, dist: 58 };
+
+const VERT_SRC = [
+  'attribute vec3 aPos;',
+  'attribute vec3 aNor;',
+  'attribute vec2 aUV;',
+  'uniform mat4 uMVP;',
+  'varying vec3 vNor;',
+  'varying vec2 vUV;',
+  'void main(){',
+  '  vNor = aNor;',
+  '  vUV = aUV;',
+  '  gl_Position = uMVP * vec4(aPos, 1.0);',
+  '}'
+].join('\n');
+
+const FRAG_SRC = [
+  'precision mediump float;',
+  'varying vec3 vNor;',
+  'varying vec2 vUV;',
+  'uniform sampler2D uTex;',
+  'uniform vec3 uLight;',
+  'uniform float uMode;',
+  'void main(){',
+  '  vec4 c = texture2D(uTex, vUV);',
+  '  if (uMode > 0.5) {',
+  '    gl_FragColor = vec4(0.0, 0.0, 0.0, c.a * 0.55);',
+  '    return;',
+  '  }',
+  '  if (c.a < 0.03) discard;',
+  '  vec3 n = normalize(vNor);',
+  '  float d = max(dot(n, uLight), 0.0);',
+  '  float light = 0.62 + 0.5 * d;',
+  '  gl_FragColor = vec4(c.rgb * light, c.a);',
+  '}'
+].join('\n');
+
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(sh));
+    return null;
+  }
+  return sh;
+}
+
+function initGL() {
+  gl = viewCv.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: false })
+    || viewCv.getContext('experimental-webgl', { alpha: true, antialias: true });
+  if (!gl) { $('#glFail').style.display = 'grid'; return; }
+
+  const vs = compile(gl.VERTEX_SHADER, VERT_SRC);
+  const fs = compile(gl.FRAGMENT_SHADER, FRAG_SRC);
+  prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(prog));
+    gl = null;
+    $('#glFail').style.display = 'grid';
+    return;
+  }
+  gl.useProgram(prog);
+  attribs.pos = gl.getAttribLocation(prog, 'aPos');
+  attribs.nor = gl.getAttribLocation(prog, 'aNor');
+  attribs.uv = gl.getAttribLocation(prog, 'aUV');
+  uniforms.mvp = gl.getUniformLocation(prog, 'uMVP');
+  uniforms.tex = gl.getUniformLocation(prog, 'uTex');
+  uniforms.light = gl.getUniformLocation(prog, 'uLight');
+  uniforms.mode = gl.getUniformLocation(prog, 'uMode');
+
+  skinTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, skinTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  uploadSkin();
+
+  shadowTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, shadowTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, makeShadowCanvas());
+
+  meshes.shadow = uploadMesh(shadowGeometry());
+  rebuildMeshes();
+}
+
+function uploadSkin() {
+  if (!gl) return;
+  gl.bindTexture(gl.TEXTURE_2D, skinTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, skinCv);
+  texDirty = false;
+}
+
+function makeShadowCanvas() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const rad = g.createRadialGradient(64, 64, 2, 64, 64, 62);
+  rad.addColorStop(0, 'rgba(0,0,0,.75)');
+  rad.addColorStop(.45, 'rgba(0,0,0,.34)');
+  rad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = rad;
+  g.fillRect(0, 0, 128, 128);
+  return c;
+}
+
+const GT = [
+  { n: [0, 0, 1],  o: [-0.5, 0.5, 0.5],   u: [1, 0, 0],  v: [0, -1, 0], f: 'front' },
+  { n: [0, 0, -1], o: [0.5, 0.5, -0.5],   u: [-1, 0, 0], v: [0, -1, 0], f: 'back' },
+  { n: [1, 0, 0],  o: [0.5, 0.5, 0.5],    u: [0, 0, -1], v: [0, -1, 0], f: 'left' },
+  { n: [-1, 0, 0], o: [-0.5, 0.5, -0.5],  u: [0, 0, 1],  v: [0, -1, 0], f: 'right' },
+  { n: [0, 1, 0],  o: [-0.5, 0.5, -0.5],  u: [1, 0, 0],  v: [0, 0, 1],  f: 'top' },
+  { n: [0, -1, 0], o: [0.5, -0.5, -0.5],  u: [-1, 0, 0], v: [0, 0, 1],  f: 'bottom' }
+];
+
+function buildLayer(layer) {
+  const pos = [], nor = [], uv = [], idx = [];
+  PARTS.forEach(p => {
+    const w = p.w, h = p.h, d = p.d;
+    const inf = layer === 'base' ? 0 : p.infl;
+    const dW = w + 2 * inf, dH = h + 2 * inf, dD = d + 2 * inf;
+    const u0 = layer === 'base' ? p.u : p.ov[0];
+    const v0 = layer === 'base' ? p.v : p.ov[1];
+    const cos = Math.cos(p.rot), sin = Math.sin(p.rot);
+    const px = p.pivot[0], py = p.pivot[1];
+
+    GT.forEach(t => {
+      const r = FACE_BY_KEY[t.f].rect(u0, v0, w, h, d);
+      const base = pos.length / 3;
+      const corners = [[0, 0], [0, 1], [1, 1], [1, 0]];
+      corners.forEach(c => {
+        const a = c[0], b = c[1];
+        const lx = (t.o[0] + t.u[0] * a + t.v[0] * b) * dW;
+        const ly = (t.o[1] + t.u[1] * a + t.v[1] * b) * dH;
+        const lz = (t.o[2] + t.u[2] * a + t.v[2] * b) * dD;
+        const wx = p.c[0] + lx, wy = p.c[1] + ly, wz = p.c[2] + lz;
+        const rx = wx - px, ry = wy - py;
+        pos.push(px + rx * cos - ry * sin, py + rx * sin + ry * cos, wz);
+        nor.push(t.n[0] * cos - t.n[1] * sin, t.n[0] * sin + t.n[1] * cos, t.n[2]);
+        uv.push((r[0] + (a ? r[2] : 0)) / 64, (r[1] + (b ? r[3] : 0)) / 64);
+      });
+      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    });
+  });
+  return { pos: pos, nor: nor, uv: uv, idx: idx };
+}
+
+function shadowGeometry() {
+  return {
+    pos: [-30, 0.01, -30, 30, 0.01, -30, 30, 0.01, 30, -30, 0.01, 30],
+    nor: [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
+    uv: [0, 0, 1, 0, 1, 1, 0, 1],
+    idx: [0, 3, 2, 0, 2, 1]
+  };
+}
+
+function uploadMesh(data) {
+  const m = { count: data.idx.length };
+  m.p = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.p);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data.pos), gl.STATIC_DRAW);
+  m.n = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.n);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data.nor), gl.STATIC_DRAW);
+  m.t = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.t);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data.uv), gl.STATIC_DRAW);
+  m.i = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.i);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(data.idx), gl.STATIC_DRAW);
+  return m;
+}
+
+function rebuildMeshes() {
+  if (!gl) return;
+  if (meshes.base) { gl.deleteBuffer(meshes.base.p); gl.deleteBuffer(meshes.base.n); gl.deleteBuffer(meshes.base.t); gl.deleteBuffer(meshes.base.i); }
+  if (meshes.overlay) { gl.deleteBuffer(meshes.overlay.p); gl.deleteBuffer(meshes.overlay.n); gl.deleteBuffer(meshes.overlay.t); gl.deleteBuffer(meshes.overlay.i); }
+  meshes.base = uploadMesh(buildLayer('base'));
+  meshes.overlay = uploadMesh(buildLayer('ov'));
+  geoDirty = false;
+}
+
+function drawMesh(m) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.p);
+  gl.enableVertexAttribArray(attribs.pos);
+  gl.vertexAttribPointer(attribs.pos, 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.n);
+  gl.enableVertexAttribArray(attribs.nor);
+  gl.vertexAttribPointer(attribs.nor, 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.t);
+  gl.enableVertexAttribArray(attribs.uv);
+  gl.vertexAttribPointer(attribs.uv, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.i);
+  gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_SHORT, 0);
+}
+
+/* ---------- 矩阵 ---------- */
+function perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+  return new Float32Array([
+    f / aspect, 0, 0, 0,
+    0, f, 0, 0,
+    0, 0, (far + near) * nf, -1,
+    0, 0, 2 * far * near * nf, 0
+  ]);
+}
+
+function lookAt(eye, center, up) {
+  let zx = eye[0] - center[0], zy = eye[1] - center[1], zz = eye[2] - center[2];
+  let l = Math.hypot(zx, zy, zz) || 1;
+  zx /= l; zy /= l; zz /= l;
+  let xx = up[1] * zz - up[2] * zy;
+  let xy = up[2] * zx - up[0] * zz;
+  let xz = up[0] * zy - up[1] * zx;
+  l = Math.hypot(xx, xy, xz) || 1;
+  xx /= l; xy /= l; xz /= l;
+  const yx = zy * xz - zz * xy;
+  const yy = zz * xx - zx * xz;
+  const yz = zx * xy - zy * xx;
+  return new Float32Array([
+    xx, yx, zx, 0,
+    xy, yy, zy, 0,
+    xz, yz, zz, 0,
+    -(xx * eye[0] + xy * eye[1] + xz * eye[2]),
+    -(yx * eye[0] + yy * eye[1] + yz * eye[2]),
+    -(zx * eye[0] + zy * eye[1] + zz * eye[2]), 1
+  ]);
+}
+
+function mul(a, b) {
+  const o = new Float32Array(16);
+  for (let c = 0; c < 4; c++) {
+    for (let r = 0; r < 4; r++) {
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] +
+                     a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+  }
+  return o;
+}
+
+function resizeView() {
+  const r = viewCv.getBoundingClientRect();
+  const d = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(r.width * d));
+  const h = Math.max(1, Math.round(r.height * d));
+  if (viewCv.width !== w || viewCv.height !== h) {
+    viewCv.width = w;
+    viewCv.height = h;
+  }
+}
+
+function drawScene() {
+  if (!gl) return;
+  if (geoDirty) rebuildMeshes();
+  if (texDirty) uploadSkin();
+
+  resizeView();
+  const w = viewCv.width, h = viewCv.height;
+  gl.viewport(0, 0, w, h);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.disable(gl.CULL_FACE);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  const target = [0, 17, 0];
+  const eye = [
+    target[0] + cam.dist * Math.cos(cam.pitch) * Math.sin(cam.yaw),
+    target[1] + cam.dist * Math.sin(cam.pitch),
+    target[2] + cam.dist * Math.cos(cam.pitch) * Math.cos(cam.yaw)
+  ];
+  const mvp = mul(perspective(38 * Math.PI / 180, w / h, 1, 400),
+                  lookAt(eye, target, [0, 1, 0]));
+
+  gl.useProgram(prog);
+  gl.uniformMatrix4fv(uniforms.mvp, false, mvp);
+  gl.uniform3fv(uniforms.light, new Float32Array([0.4, 0.8, 0.45]));
+  gl.uniform1i(uniforms.tex, 0);
+  gl.activeTexture(gl.TEXTURE0);
+
+  gl.uniform1f(uniforms.mode, 1);
+  gl.depthMask(false);
+  gl.bindTexture(gl.TEXTURE_2D, shadowTex);
+  drawMesh(meshes.shadow);
+  gl.depthMask(true);
+
+  gl.uniform1f(uniforms.mode, 0);
+  gl.bindTexture(gl.TEXTURE_2D, skinTex);
+  drawMesh(meshes.base);
+  if (state.overlay) drawMesh(meshes.overlay);
+}
+
+let lastT = 0;
+function loop(t) {
+  requestAnimationFrame(loop);
+  const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0;
+  lastT = t;
+  if (state.auto) cam.yaw += dt * 0.55;
+  drawScene();
+}
+
+/* ============================================================
+   默认皮肤（程序化绘制，不依赖任何外部素材）
+   ============================================================ */
+function faceRectOf(p, face) {
+  return FACE_BY_KEY[face].rect(p.u, p.v, p.w, p.h, p.d);
+}
+
+function paintDefaultSkin() {
+  const P4 = partTable(4);
+  const byId = {};
+  P4.forEach(p => { byId[p.id] = p; });
+
+  const SKIN = '#c99a76', SKIN_D = '#ac7d5d', HAIR = '#3a2a20';
+  const SHIRT = '#2f8f80', SHIRT_D = '#22695e', PANTS = '#3b4a6d', SHOE = '#292a31';
+  const EYE = '#f1efe7', PUPIL = '#2f3d59', MOUTH = '#8a5a45';
+
+  const P = (r, c) => { sctx.fillStyle = c; sctx.fillRect(r[0], r[1], r[2], r[3]); };
+  const F = (id, face) => faceRectOf(byId[id], face);
+  const SIDES = ['front', 'back', 'left', 'right'];
+  const ALL = ['front', 'back', 'left', 'right', 'top', 'bottom'];
+
+  sctx.clearRect(0, 0, 64, 64);
+
+  // 头部
+  ALL.forEach(f => P(F('head', f), SKIN));
+  P(F('head', 'top'), HAIR);
+  P(F('head', 'back'), HAIR);
+  ['left', 'right'].forEach(f => { const r = F('head', f); P([r[0], r[1], r[2], 2], HAIR); });
+  {
+    const r = F('head', 'front'), x = r[0], y = r[1];
+    P([x, y, 8, 2], HAIR);
+    P([x, y + 2, 1, 1], HAIR); P([x + 7, y + 2, 1, 1], HAIR);
+    P([x + 1, y + 3, 2, 1], EYE); P([x + 5, y + 3, 2, 1], EYE);
+    P([x + 2, y + 3, 1, 1], PUPIL); P([x + 5, y + 3, 1, 1], PUPIL);
+    P([x + 3, y + 4, 2, 1], SKIN_D);
+    P([x + 3, y + 5, 2, 1], MOUTH);
+  }
+
+  // 身体
+  ALL.forEach(f => P(F('body', f), SHIRT));
+  P(F('body', 'bottom'), PANTS);
+  SIDES.forEach(f => { const r = F('body', f); P([r[0], r[1] + r[3] - 2, r[2], 2], PANTS); });
+  { const r = F('body', 'front'); P([r[0], r[1], r[2], 1], SHIRT_D); }
+
+  // 手臂
+  ['rarm', 'larm'].forEach(id => {
+    ALL.forEach(f => P(F(id, f), SKIN));
+    P(F(id, 'top'), SHIRT);
+    SIDES.forEach(f => {
+      const r = F(id, f);
+      P([r[0], r[1], r[2], 4], SHIRT);
+      P([r[0], r[1] + 4, r[2], 1], SHIRT_D);
+    });
+  });
+
+  // 腿
+  ['rleg', 'lleg'].forEach(id => {
+    ALL.forEach(f => P(F(id, f), PANTS));
+    P(F(id, 'bottom'), SHOE);
+    SIDES.forEach(f => { const r = F(id, f); P([r[0], r[1] + r[3] - 3, r[2], 3], SHOE); });
+  });
+}
+
+/* ============================================================
+   编辑器交互
+   ============================================================ */
+let saveTimer = 0;
+const SAVE_KEY = 'skinstudio.skin.v1';
+
+function onSkinChanged() {
+  texDirty = true;
+  renderBase();
+  renderOverlay();
+  updateHistBtns();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function () {
+    try { localStorage.setItem(SAVE_KEY, skinCv.toDataURL('image/png')); } catch (e) {}
+  }, 600);
+}
+
+function markDirty() {
+  texDirty = true;
+  renderBase();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function () {
+    try { localStorage.setItem(SAVE_KEY, skinCv.toDataURL('image/png')); } catch (e) {}
+  }, 600);
+}
+
+function updateStatus() {
+  $('#stCoord').textContent = hover ? hover.x + ', ' + hover.y : '—';
+  $('#stPart').textContent = hover
+    ? hover.region.part.name + ' · ' + hover.region.faceName + (hover.region.layer === 'ov' ? ' · 外层' : '')
+    : '—';
+  const tip = $('#tip');
+  if (hover) {
+    tip.textContent = hover.region.part.name + ' · ' + hover.region.faceName +
+      (hover.region.layer === 'ov' ? ' · 外层' : '');
+    tip.classList.add('on');
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    tip.style.left = clamp(hover.cx + 16, 4, wrap.clientWidth - tw - 4) + 'px';
+    tip.style.top = clamp(hover.cy + 18, 4, wrap.clientHeight - th - 4) + 'px';
+  } else {
+    tip.classList.remove('on');
+  }
+}
+
+function applyHover(ev) {
+  const t = toTexel(ev);
+  const reg = (t.x >= 0 && t.x < 64 && t.y >= 0 && t.y < 64) ? regionAt(t.x, t.y) : null;
+  hover = reg ? { x: t.x, y: t.y, cx: t.cx, cy: t.cy, region: reg } : null;
+  renderOverlay();
+  updateStatus();
+}
+
+wrap.addEventListener('pointerdown', function (e) {
+  if (e.button === 1 || spaceDown) {
+    panning = { x: e.clientX, y: e.clientY, ox: state.ox, oy: state.oy };
+    wrap.setPointerCapture(e.pointerId);
+    wrap.style.cursor = 'grabbing';
+    e.preventDefault();
+    return;
+  }
+  if (e.button !== 0) return;
+  const t = toTexel(e);
+  const reg = regionAt(t.x, t.y);
+  wrap.setPointerCapture(e.pointerId);
+
+  if (state.tool === 'picker') {
+    if (reg) {
+      const d = sctx.getImageData(t.x, t.y, 1, 1).data;
+      if (d[3] > 0) setColor(('#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('')), true);
+      else toast('这个像素是透明的');
+    }
+    return;
+  }
+  if (!reg) return;
+
+  pushHistory();
+  if (state.tool === 'bucket') {
+    floodFill(t.x, t.y);
+    markDirty();
+  } else {
+    painting = true;
+    lastPx = null;
+    strokeTo(t.x, t.y, state.tool === 'eraser');
+    markDirty();
+  }
+});
+
+wrap.addEventListener('pointermove', function (e) {
+  if (panning) {
+    state.ox = panning.ox + (e.clientX - panning.x);
+    state.oy = panning.oy + (e.clientY - panning.y);
+    renderBase();
+    renderOverlay();
+    return;
+  }
+  applyHover(e);
+  if (painting) {
+    const t = toTexel(e);
+    strokeTo(t.x, t.y, state.tool === 'eraser');
+    markDirty();
+    renderOverlay();
+  }
+});
+
+function endStroke(e) {
+  if (painting) { painting = false; lastPx = null; renderOverlay(); }
+  if (panning) {
+    panning = null;
+    wrap.style.cursor = spaceDown ? 'grab' : 'crosshair';
+  }
+}
+wrap.addEventListener('pointerup', endStroke);
+wrap.addEventListener('pointercancel', endStroke);
+wrap.addEventListener('pointerleave', function (e) {
+  if (!painting) { hover = null; renderOverlay(); updateStatus(); }
+});
+
+wrap.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  const r = wrap.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const tx = (mx - state.ox) / state.zoom;
+  const ty = (my - state.oy) / state.zoom;
+  let nz = state.zoom * (e.deltaY > 0 ? 0.8 : 1.25);
+  nz = clamp(Math.round(nz), 2, 40);
+  if (nz === state.zoom) return;
+  state.zoom = nz;
+  state.ox = mx - tx * nz;
+  state.oy = my - ty * nz;
+  renderBase(); renderOverlay(); updateZoomLabel();
+}, { passive: false });
+
+wrap.addEventListener('dblclick', function () { setFocus('all'); });
+
+/* ============================================================
+   视图：适配 / 聚焦
+   ============================================================ */
+function fitAll() {
+  const s = viewSize();
+  const z = clamp(Math.floor(Math.min((s.w - 56) / 64, (s.h - 56) / 64)), 2, 40);
+  state.zoom = z;
+  state.ox = Math.round((s.w - 64 * z) / 2);
+  state.oy = Math.round((s.h - 64 * z) / 2);
+  renderBase(); renderOverlay(); updateZoomLabel();
+}
+
+function focusTo(rects) {
+  if (!rects) { fitAll(); return; }
+  const b = unionRect(rects);
+  const s = viewSize();
+  const z = clamp(Math.floor(Math.min((s.w - 64) / b[2], (s.h - 64) / b[3])), 2, 40);
+  state.zoom = z;
+  state.ox = Math.round(s.w / 2 - (b[0] + b[2] / 2) * z);
+  state.oy = Math.round(s.h / 2 - (b[1] + b[3] / 2) * z);
+  renderBase(); renderOverlay(); updateZoomLabel();
+}
+
+const FOCUS_DEFS = [
+  { id: 'all', label: '全部', parts: null },
+  { id: 'head', label: '头部', parts: ['head'] },
+  { id: 'body', label: '身体', parts: ['body'] },
+  { id: 'arms', label: '手臂', parts: ['rarm', 'larm'] },
+  { id: 'legs', label: '腿部', parts: ['rleg', 'lleg'] }
+];
+
+function buildChips() {
+  const box = $('#focusChips');
+  box.innerHTML = '';
+  FOCUS_DEFS.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (state.focused === f.id ? ' on' : '');
+    b.textContent = f.label;
+    b.dataset.focus = f.id;
+    b.addEventListener('click', function () { setFocus(f.id); });
+    box.appendChild(b);
+  });
+}
+
+function setFocus(id) {
+  state.focused = id;
+  $$('#focusChips .chip').forEach(c => c.classList.toggle('on', c.dataset.focus === id));
+  const def = FOCUS_DEFS.find(f => f.id === id);
+  if (!def || !def.parts) { fitAll(); return; }
+  let regs = [];
+  def.parts.forEach(p => { regs = regs.concat(regionsOfPart(p)); });
+  focusTo(regs);
+}
+
+/* ============================================================
+   颜色
+   ============================================================ */
+const PALETTE = [
+  '#000000', '#262626', '#4d4d4d', '#7f7f7f', '#b3b3b3', '#d9d9d9', '#ffffff', '#f4e7d3',
+  '#2b1a12', '#3f2a1c', '#5d3a22', '#7d4f2e', '#a06a3f', '#c08a56', '#d9a878', '#f0c9a2',
+  '#8d5a3b', '#a87050', '#c08f6e', '#d6a986', '#e8c1a0', '#f7dcc4', '#fdeade', '#fff6ee',
+  '#6d1b1b', '#a52a2a', '#d93a3a', '#f25c54', '#ff8a5b', '#ffb347', '#ffd93d', '#fff275',
+  '#1c3f27', '#256b38', '#2f8f4a', '#4caf50', '#86d15c', '#b6e34b', '#2f8f80', '#39b3a1',
+  '#0f3552', '#1a5a8a', '#2377b8', '#3a9ee0', '#66c8ff', '#a5e4ff', '#d9f5ff', '#e9fbff',
+  '#231a42', '#3a2a6b', '#553d96', '#7a55c4', '#a97ce6', '#cfaeff', '#3b4a6d', '#6278a8',
+  '#402a1c', '#5e3f2a', '#7d5537', '#9c6c46', '#bf8a5e', '#54575e', '#8a8f98', '#c3c8d0'
+];
+const recent = [];
+
+function setColor(hex, addRecent) {
+  hex = hex.toLowerCase();
+  state.color = hex;
+  $('#swatchFill').style.background = hex;
+  $('#colorInput').value = hex;
+  $('#hexLabel').textContent = hex.toUpperCase();
+  $$('#palette .sw').forEach(s => s.classList.toggle('on', s.dataset.c === hex));
+  if (addRecent) {
+    const i = recent.indexOf(hex);
+    if (i >= 0) recent.splice(i, 1);
+    recent.unshift(hex);
+    if (recent.length > 16) recent.pop();
+    renderRecent();
+  }
+}
+
+function renderRecent() {
+  const box = $('#recent');
+  box.innerHTML = '';
+  recent.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'sw';
+    s.style.background = c;
+    s.title = c.toUpperCase();
+    s.addEventListener('click', function () { setColor(c, false); });
+    box.appendChild(s);
+  });
+}
+
+function buildPalette() {
+  const box = $('#palette');
+  box.innerHTML = '';
+  PALETTE.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'sw';
+    s.dataset.c = c;
+    s.style.background = c;
+    s.title = c.toUpperCase();
+    s.addEventListener('click', function () { setColor(c, true); });
+    box.appendChild(s);
+  });
+}
+
+/* ============================================================
+   UI 绑定
+   ============================================================ */
+function setTool(t) {
+  state.tool = t;
+  $$('#tools .tool').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  wrap.style.cursor = t === 'picker' ? 'copy' : 'crosshair';
+}
+
+function setBrush(n) {
+  state.brush = n;
+  $$('#brushes .brushBtn').forEach(b => b.classList.toggle('on', +b.dataset.brush === n));
+}
+
+function setModel(m) {
+  if (state.model === m) return;
+  state.model = m;
+  $$('#modelSeg button').forEach(b => b.classList.toggle('on', b.dataset.model === m));
+  $('#viewBadge').textContent = m === 'slim' ? '纤细 3px' : '经典 4px';
+  buildRegions();
+  geoDirty = true;
+  renderOverlay();
+}
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { el.classList.remove('show'); }, 2200);
+}
+
+function bindUI() {
+  $$('#tools .tool').forEach(b => b.addEventListener('click', function () { setTool(b.dataset.tool); }));
+  $$('#brushes .brushBtn').forEach(b => b.addEventListener('click', function () { setBrush(+b.dataset.brush); }));
+
+  $('#colorInput').addEventListener('input', function (e) { setColor(e.target.value, false); });
+  $('#colorInput').addEventListener('change', function (e) { setColor(e.target.value, true); });
+
+  $('#cbSym').addEventListener('change', function (e) { state.sym = e.target.checked; });
+  $('#cbGrid').addEventListener('change', function (e) {
+    state.grid = e.target.checked; renderOverlay();
+  });
+  $('#cbOverlay').addEventListener('change', function (e) { state.overlay = e.target.checked; });
+  $('#cbAuto').addEventListener('change', function (e) { state.auto = e.target.checked; });
+
+  $$('#modelSeg button').forEach(b => b.addEventListener('click', function () { setModel(b.dataset.model); }));
+
+  $('#btnUndo').addEventListener('click', undo);
+  $('#btnRedo').addEventListener('click', redo);
+
+  $('#btnImport').addEventListener('click', function () { $('#fileInput').click(); });
+  $('#fileInput').addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadFile(f);
+    e.target.value = '';
+  });
+
+  $('#btnExport').addEventListener('click', function () {
+    skinCv.toBlob(function (blob) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'skin-64x64.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+      toast('已导出 64×64 PNG');
+    }, 'image/png');
+  });
+
+  let resetArm = false, resetTimer = 0;
+  $('#btnReset').addEventListener('click', function () {
+    const btn = $('#btnReset');
+    if (resetArm) {
+      clearTimeout(resetTimer);
+      resetArm = false;
+      btn.textContent = '重置';
+      pushHistory();
+      paintDefaultSkin();
+      onSkinChanged();
+      toast('已恢复默认皮肤');
+    } else {
+      resetArm = true;
+      btn.textContent = '确认重置';
+      resetTimer = setTimeout(function () { resetArm = false; btn.textContent = '重置'; }, 2600);
+    }
+  });
+
+  $('#btnResetView').addEventListener('click', function () {
+    cam.yaw = -0.42; cam.pitch = 0.12; cam.dist = 58;
+  });
+
+  // 拖拽文件
+  ['dragenter', 'dragover'].forEach(t => window.addEventListener(t, function (e) {
+    e.preventDefault();
+  }));
+  window.addEventListener('drop', function (e) {
+    e.preventDefault();
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+
+  window.addEventListener('keydown', function (e) {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (tag === 'INPUT' && /^(text|number|search|email|url|password)$/i.test(e.target.type || '')) return;
+    if (e.code === 'Space') {
+      spaceDown = true;
+      if (!panning) wrap.style.cursor = 'grab';
+      e.preventDefault();
+    }
+    const meta = e.ctrlKey || e.metaKey;
+    if (meta && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (meta && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+    if (meta) return;
+    const k = e.key.toLowerCase();
+    if (k === 'p') setTool('pencil');
+    else if (k === 'e') setTool('eraser');
+    else if (k === 'g') setTool('bucket');
+    else if (k === 'i') setTool('picker');
+    else if (k === '[') setBrush(Math.max(1, state.brush - 1));
+    else if (k === ']') setBrush(Math.min(3, state.brush + 1));
+    else if (k === 'f') setFocus('all');
+  });
+  window.addEventListener('keyup', function (e) {
+    if (e.code === 'Space') {
+      spaceDown = false;
+      if (!panning) wrap.style.cursor = state.tool === 'picker' ? 'copy' : 'crosshair';
+    }
+  });
+}
+
+/* ============================================================
+   3D 交互
+   ============================================================ */
+function bindView() {
+  const ptrs = new Map();
+  let pinchStart = 0;
+
+  viewCv.addEventListener('pointerdown', function (e) {
+    viewCv.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) {
+      const v = Array.from(ptrs.values());
+      pinchStart = Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y);
+    }
+    e.preventDefault();
+  });
+
+  viewCv.addEventListener('pointermove', function (e) {
+    const p = ptrs.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size === 1) {
+      cam.yaw -= dx * 0.0085;
+      cam.pitch = clamp(cam.pitch + dy * 0.006, -1.3, 1.3);
+    } else if (ptrs.size === 2) {
+      const v = Array.from(ptrs.values());
+      const d = Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y);
+      if (pinchStart > 0 && d > 0) cam.dist = clamp(cam.dist * (pinchStart / d), 26, 150);
+      pinchStart = d;
+    }
+  });
+
+  function up(e) {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinchStart = 0;
+  }
+  viewCv.addEventListener('pointerup', up);
+  viewCv.addEventListener('pointercancel', up);
+
+  viewCv.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    cam.dist = clamp(cam.dist * Math.exp(e.deltaY * 0.0012), 26, 150);
+  }, { passive: false });
+
+  viewCv.addEventListener('dblclick', function () {
+    cam.yaw = -0.42; cam.pitch = 0.12; cam.dist = 58;
+  });
+  viewCv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+}
+
+/* ============================================================
+   导入
+   ============================================================ */
+function loadFile(file) {
+  if (!/^image\//.test(file.type)) { toast('请选择 PNG 图片'); return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = function () {
+    applySkinImage(img);
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = function () { toast('无法读取这张图片'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+function applySkinImage(img) {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  if (w !== 64 || (h !== 64 && h !== 32)) {
+    toast('需要 64×64 或旧版 64×32 的皮肤，当前为 ' + w + '×' + h);
+    return;
+  }
+  pushHistory();
+  sctx.clearRect(0, 0, 64, 64);
+  sctx.imageSmoothingEnabled = false;
+  sctx.drawImage(img, 0, 0, w, h, 0, 0, w, h);
+  if (h === 32) {
+    sctx.drawImage(skinCv, 0, 16, 16, 16, 16, 48, 16, 16);
+    sctx.drawImage(skinCv, 40, 16, 16, 16, 32, 48, 16, 16);
+  }
+  onSkinChanged();
+  toast('已载入 ' + w + '×' + h + ' 皮肤' + (h === 32 ? '（已转换为 64×64）' : ''));
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+function init() {
+  buildRegions();
+  buildPalette();
+  setColor('#c99a76', false);
+  buildChips();
+  bindUI();
+  bindView();
+
+  paintDefaultSkin();
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      const img = new Image();
+      img.onload = function () {
+        sctx.clearRect(0, 0, 64, 64);
+        sctx.drawImage(img, 0, 0);
+        texDirty = true;
+        renderBase();
+      };
+      img.src = saved;
+    }
+  } catch (e) {}
+
+  initGL();
+  resizeEditor();
+  fitAll();
+  updateHistBtns();
+  setBrush(1);
+  setTool('pencil');
+  updateStatus();
+
+  let rt = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () {
+      resizeEditor();
+      updateZoomLabel();
+    }, 80);
+  });
+
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { resizeEditor(); }).observe(wrap);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
